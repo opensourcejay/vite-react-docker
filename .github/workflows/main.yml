@@ -1,0 +1,28 @@
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push Docker image
+        uses: azure/docker-login@v1
+        with:
+          login-server: <yourregistry>.azurecr.io
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - run: |
+          docker build -t <yourregistry>.azurecr.io/vite-app:${{ github.sha }} .
+          docker push <yourregistry>.azurecr.io/vite-app:${{ github.sha }}
+
+      - name: Deploy to ACA
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: kohler
+          containerAppName: vite-react-docker
+          imageToDeploy: vite-react-docker.internal.redtree-98d62830.eastus2..azurecr.io/vite-app:${{ github.sha }}
